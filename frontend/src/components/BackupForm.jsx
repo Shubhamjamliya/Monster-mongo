@@ -36,7 +36,9 @@ const BackupForm = () => {
       
       setIsBackupLoading(false);
     } catch (err) {
-      setError('Failed to generate backup. Please check your URI and DB name.');
+      console.error('Backup error:', err);
+      const errorMessage = err.response?.data?.error || 'Failed to generate backup. Please check your URI and DB name.';
+      setError(errorMessage);
       setIsBackupLoading(false);
     }
   };

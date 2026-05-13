@@ -6,15 +6,51 @@ const ProgressDashboard = ({ progressData, error }) => {
   const collectionNames = Object.keys(progressData);
   const allCompleted = collectionNames.length > 0 && collectionNames.every(name => progressData[name].status === 'completed');
 
+  // Calculate Overall Progress
+  const totals = collectionNames.reduce((acc, name) => {
+    acc.transferred += progressData[name].count || 0;
+    acc.total += progressData[name].total || 0;
+    return acc;
+  }, { transferred: 0, total: 0 });
+
+  const overallPercentage = totals.total > 0 ? Math.round((totals.transferred / totals.total) * 100) : 0;
+
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
+      {/* Overall Progress Section */}
+      {collectionNames.length > 0 && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass p-6 rounded-2xl border-primary/20 shadow-lg shadow-primary/5"
+        >
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Overall Progress</h3>
+              <p className="text-2xl font-black text-white">{overallPercentage}%</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-medium text-slate-500">Total Documents</p>
+              <p className="text-sm font-bold text-primary">{totals.transferred.toLocaleString()} / {totals.total.toLocaleString()}</p>
+            </div>
+          </div>
+          <div className="h-3 w-full bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+            <motion.div 
+              initial={{ width: 0 }}
+              animate={{ width: `${overallPercentage}%` }}
+              className="h-full bg-gradient-to-r from-primary to-primary-dark shadow-[0_0_20px_rgba(56,189,248,0.3)]"
+            />
+          </div>
+        </motion.div>
+      )}
+
       <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-xl font-bold">Migration Progress</h2>
-          <p className="text-slate-400 text-sm">Real-time data synchronization</p>
+          <h2 className="text-xl font-bold">Collection Details</h2>
+          <p className="text-slate-400 text-sm">Real-time status per collection</p>
         </div>
         <div className="text-right">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Status</span>
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">System Status</span>
           <div className={`flex items-center gap-2 ${allCompleted ? 'text-secondary' : 'text-primary'}`}>
             {allCompleted ? (
               <>

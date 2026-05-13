@@ -7,21 +7,27 @@ class BackupService {
   async createBackup(uri, dbName) {
     const client = new MongoClient(uri);
     const backupDir = path.join(__dirname, '../../backups');
-    if (!fs.existsSync(backupDir)) {
-      fs.mkdirSync(backupDir);
-    }
-
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const folderName = `${dbName}_${timestamp}`;
     const folderPath = path.join(backupDir, folderName);
-    fs.mkdirSync(folderPath);
 
     try {
+      if (!fs.existsSync(backupDir)) {
+        console.log(`Creating backups directory at ${backupDir}`);
+        fs.mkdirSync(backupDir);
+      }
+
+      console.log(`Starting backup for DB: ${dbName}`);
+      fs.mkdirSync(folderPath);
+
       await client.connect();
+      console.log('Connected to source for backup');
       const db = client.db(dbName);
       const collections = await db.listCollections().toArray();
+      console.log(`Found ${collections.length} collections to backup`);
 
       for (const col of collections) {
+        console.log(`Backing up collection: ${col.name}`);
         const collection = db.collection(col.name);
         const documents = await collection.find({}).toArray();
         fs.writeFileSync(
@@ -37,18 +43,26 @@ class BackupService {
 
       return new Promise((resolve, reject) => {
         output.on('close', () => resolve(zipPath));
-        archive.on('error', (err) => reject(err));
+        archive.on('error', (err) => {
+          console.error('Archiver error:', err);
+          reject(err);
+        });
         archive.pipe(output);
         archive.directory(folderPath, false);
         archive.finalize();
       });
     } catch (error) {
+      console.error('Backup creation failed:', error.message);
       throw error;
     } finally {
       await client.close();
       // Clean up the folder, keep only the zip
       if (fs.existsSync(folderPath)) {
-        fs.rmSync(folderPath, { recursive: true });
+        try {
+          fs.rmSync(folderPath, { recursive: true });
+        } catch (cleanupError) {
+          console.error('Failed to clean up temp folder:', cleanupError.message);
+        }
       }
     }
   }
