@@ -21,7 +21,8 @@ const BackupForm = () => {
     setError(null);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/transfer/backup', formData, {
+      const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/transfer';
+      const response = await axios.post(`${API_URL}/backup`, formData, {
         responseType: 'blob', // Important for file download
       });
 
